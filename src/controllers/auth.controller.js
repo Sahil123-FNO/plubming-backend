@@ -68,15 +68,16 @@ const authController = {
 
   login: async (req, res) => {
     try {
+  
       const { email, password } = req.body;
       const user = await User.findOne({ email });
 
       if (!user || !(await user.comparePassword(password))) {
-        return res.status(401).json({ message: 'Invalid credentials' });
+        return res.status(400).json({ message: 'Invalid credentials' });
       }
 
       if (!user.isVerified) {
-        return res.status(401).json({ message: 'Please verify your email first' });
+        return res.status(400).json({ message: 'Please verify your email first' });
       }
 
       const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '24h' });

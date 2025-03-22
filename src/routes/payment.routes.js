@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const { auth } = require('../middleware/auth');
+const auth  = require('../middlewares/auth.middleware');
 const { body } = require('express-validator');
 const paymentController = require('../controllers/payment.controller');
-const validateRequest = require('../middleware/validateRequest');
+const validateRequest = require('../middlewares/validate-request.middleware');
 
 // Process Payment Validation
 const processPaymentValidation = [

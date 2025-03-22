@@ -1,16 +1,17 @@
 const express = require('express');
 const router = express.Router();
 const upload = require('../config/multerConfig');
-const auth = require('../middleware/auth');
-const admin = require('../middleware/admin');
+const auth = require('../middlewares/auth.middleware');
+const admin = require('../middlewares/admin.auth.middleware');
 
 // Import controllers
 const userController = require('../controllers/userController');
 const productController = require('../controllers/productController');
 const serviceController = require('../controllers/serviceController');
 const orderController = require('../controllers/orderController');
-
+const dashboardController =  require('../controllers/dashboard.controller')
 // User Management Routes
+router.get('/dashboard',  admin, dashboardController.getCounts)
 router.get('/users', auth, admin, userController.getAllUsers);
 router.put('/users/:id', auth, admin, userController.updateUser);
 router.delete('/users/:id', auth, admin, userController.deleteUser);

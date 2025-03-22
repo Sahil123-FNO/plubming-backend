@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const { auth } = require('../middleware/auth');
+const  auth  = require('../middlewares/auth.middleware');
 const { body, param } = require('express-validator');
 const userController = require('../controllers/userController');
-const validateRequest = require('../middleware/validateRequest');
+const validateRequest = require('../middlewares/validate-request.middleware');
 
 // Change Password Validation
 const changePasswordValidation = [

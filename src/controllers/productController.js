@@ -2,13 +2,14 @@ const Product = require('../models/product.model');
 
 exports.createProduct = async (req, res) => {
   try {
-    const { name, description, price, category, stock } = req.body;
+    const { name, description, price, category, stock, sizes } = req.body;
     const product = new Product({
       name,
       description,
       price,
       category,
       stock,
+      sizes,
       image: req.file?.path
     });
     await product.save();
@@ -20,8 +21,54 @@ exports.createProduct = async (req, res) => {
 
 exports.getAllProducts = async (req, res) => {
   try {
-    const products = await Product.find();
-    res.json(products);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    // Build filter object based on query parameters
+    const filter = {};
+    if (req.query.status) filter.status = req.query.status;
+  
+    if (req.query.startDate && req.query.endDate) {
+      filter.createdAt = {
+        $gte: new Date(req.query.startDate),
+        $lte: new Date(req.query.endDate)
+      };
+    }
+    if (req.query.search) {
+      filter.$or = [
+        { name: { $regex: req.query.search, $options: 'i' } },
+        {category: { $regex: req.query.search, $options: 'i' } }
+      ];
+    }
+
+    // Build sort object
+    const sort = {};
+    if (req.query.sortBy) {
+      const parts = req.query.sortBy.split(':');
+      sort[parts[0]] = parts[1] === 'desc' ? -1 : 1;
+    } else {
+      sort.createdAt = -1; // Default sort by creation date
+    }
+
+    const Products = await Product.find(filter).select('-password')
+      .sort(sort)
+      .skip(skip)
+      .limit(limit);
+
+    const totalOrders = await Product.countDocuments(filter);
+    const totalPages = Math.ceil(totalOrders / limit);
+
+    res.json({
+      Products,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalItems: totalOrders,
+        itemsPerPage: limit
+      }
+    });
+
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

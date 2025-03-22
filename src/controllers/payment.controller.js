@@ -1,4 +1,4 @@
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY || "ajkdadjkajdkajsdkasdjkadjkad");
 const Order = require('../models/order.model');
 const Payment = require('../models/payment.model');
 const Booking = require('../models/booking.model');

@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const { auth } = require('../middleware/auth');
 const { body, param } = require('express-validator');
+const  auth = require('../middlewares/auth.middleware');
 const bookingController = require('../controllers/booking.controller');
-const validateRequest = require('../middleware/validateRequest');
+const validateRequest = require('../middlewares/validate-request.middleware');
 
 // Create Booking Validation
 const createBookingValidation = [

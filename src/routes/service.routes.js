@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const { auth, isAdmin } = require('../middleware/auth');
+const { auth, isAdmin } = require('../middlewares/auth.middleware');
 const { body } = require('express-validator');
 const serviceController = require('../controllers/serviceController');
-const validateRequest = require('../middleware/validateRequest');
+const validateRequest = require('../middlewares/validate-request.middleware');
 
 // Create/Update Service Validation
 const serviceValidation = [
