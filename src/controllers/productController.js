@@ -2,15 +2,16 @@ const Product = require('../models/product.model');
 
 exports.createProduct = async (req, res) => {
   try {
-    const { name, description, price, category, stock, sizes } = req.body;
+    const { name, description, price, categoryName, stock, sizes } = req.body;
+    const properpath = req.file ? req.file.path.replace('/uploads', '') : req.file.path
     const product = new Product({
       name,
       description,
       price,
-      category,
+      categoryName,
       stock,
       sizes,
-      image: req.file?.path
+      image: properpath
     });
     await product.save();
     res.status(201).json(product);
@@ -38,7 +39,7 @@ exports.getAllProducts = async (req, res) => {
     if (req.query.search) {
       filter.$or = [
         { name: { $regex: req.query.search, $options: 'i' } },
-        {category: { $regex: req.query.search, $options: 'i' } }
+        {categoryName: { $regex: req.query.search, $options: 'i' } }
       ];
     }
 
