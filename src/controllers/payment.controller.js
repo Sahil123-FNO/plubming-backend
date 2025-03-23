@@ -1,8 +1,15 @@
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY || "ajkdadjkajdkajsdkasdjkadjkad");
+
+require('dotenv').config();
+if (!process.env.STRIPE_SECRET_KEY) {
+  console.error('STRIPE_SECRET_KEY is not defined in environment variables');
+  process.exit(1);
+}
+
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const Order = require('../models/order.model');
 const Payment = require('../models/payment.model');
 const Booking = require('../models/booking.model');
-const orderModel = require('../models/order.model');
+
 
 const paymentController = {
   processPayment: async (req, res) => {
