@@ -2,22 +2,22 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY || "ajkdadjkajdka
 const Order = require('../models/order.model');
 const Payment = require('../models/payment.model');
 const Booking = require('../models/booking.model');
+const orderModel = require('../models/order.model');
 
 const paymentController = {
   processPayment: async (req, res) => {
     try {
-      const { bookingId, paymentMethodId } = req.body;
+      const { bookingId, paymentMethodId, orderId } = req.body;
 
       // Get booking details
-      const booking = await Booking.findById(bookingId)
+      if(bookingId){
+        const booking = await Booking.findById(bookingId)
         .populate('service')
         .populate('user');
 
       if (!booking) {
         return res.status(404).json({ message: 'Booking not found' });
       }
-
-      // Create payment intent
       const paymentIntent = await stripe.paymentIntents.create({
         amount: booking.service.price * 100, // Stripe expects amount in cents
         currency: 'usd',
@@ -46,6 +46,42 @@ const paymentController = {
       booking.paymentStatus = 'paid';
       await booking.save();
 
+      }
+      else { 
+        const orders = await Order.findById(orderId)
+        if(!orders){
+          return res.status(404).json({ message: 'Order not found' });
+        }
+        const paymentIntent = await stripe.paymentIntents.create({
+          amount: orders.totalAmount * 100, // Stripe expects amount in cents
+          currency: 'inr',
+          
+          payment_method: paymentMethodId,
+          confirmation_method: 'manual',
+          confirm: true,
+          description: `Payment for ${orders._id.toString()}`,
+          metadata: {
+            bookingId: orders._id.toString(),
+            userId: req.user._id.toString()
+          }
+        });
+  
+        // Create payment record
+        const payment = await Payment.create({
+          order: orders._id,
+          user: req.user._id,
+          amount: orders.totalAmount,
+          stripePaymentId: paymentIntent.id,
+          status: paymentIntent.status,
+          paymentMethod: paymentMethodId
+        });
+  
+        // Update booking payment status
+        orders.paymentStatus = 'paid';
+        await orders.save();
+  
+      }
+      
       res.json({
         success: true,
         payment,

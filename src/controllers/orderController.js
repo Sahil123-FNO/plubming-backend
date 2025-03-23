@@ -252,3 +252,60 @@ exports.getOrderStats = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 }; 
+
+exports.createOrder = async (req, res) => {
+  try {
+    const { items } = req.body;
+
+    // Validate if items exist in request
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Items are required and must be an array'
+      });
+    }
+
+    // Calculate subtotal and total amount
+    const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const tax = 0; // You can modify this based on your tax calculation logic
+    const discount = 0; // You can modify this based on your discount logic
+    const totalAmount = subtotal + tax - discount;
+
+    // Generate unique order number (you can modify this logic as needed)
+    const orderNumber = `ORD${Date.now()}`;
+
+    const newOrder = new Order({
+      orderNumber,
+      userId: req.user._id, // Assuming req.user is set by your auth middleware
+      items: items.map(item => ({
+        ...item,
+        subtotal: item.price * item.quantity
+      })),
+      status: 'pending',
+      subtotal,
+      tax,
+      discount,
+      totalAmount,
+      paymentDetails: {
+        method: req.body.paymentMethod || 'cash', // Default payment method
+        status: 'pending'
+      }
+    });
+
+    const savedOrder = await newOrder.save();
+
+    res.status(201).json({
+      success: true,
+      message: 'Order created successfully',
+      data: savedOrder
+    });
+
+  } catch (error) {
+    console.error('Error creating order:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error creating order',
+      error: error.message
+    });
+  }
+};

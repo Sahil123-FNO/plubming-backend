@@ -21,6 +21,9 @@ const processPaymentValidation = [
     body('orderId')
         .notEmpty()
         .withMessage('Order ID is required'),
+    body('bookingId')
+        .optional()
+    
 ];
 
 // Routes

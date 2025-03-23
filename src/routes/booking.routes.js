@@ -7,9 +7,6 @@ const validateRequest = require('../middlewares/validate-request.middleware');
 
 // Create Booking Validation
 const createBookingValidation = [
-    body('serviceId')
-        .notEmpty()
-        .withMessage('Service ID is required'),
     body('date')
         .notEmpty()
         .withMessage('Booking date is required')
