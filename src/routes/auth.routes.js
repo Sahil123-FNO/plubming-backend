@@ -15,7 +15,21 @@ router.post('/signup',
   authController.signup
 );
 
+router.post('/forgotPassword',
+  [
+    body('email').isEmail().normalizeEmail(),
+  
+    validateRequest
+  ],
+  authController.forgotPassword
+);
 router.get('/verify/:token', authController.verifyEmail);
+router.post('/resentVerifyLink', 
+  [
+    body('email').isEmail().normalizeEmail(),
+    validateRequest
+  ],
+  authController.resendSendOtp);
 
 router.post('/login',
   [

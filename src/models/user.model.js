@@ -13,6 +13,15 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  forgotPasswordToken: {
+    type: String,
+    required: false
+  },
+  forgotPasswordTokenExpry: {
+    type: Date,
+
+  },
+  
   name: {
     type: String,
     required: true
