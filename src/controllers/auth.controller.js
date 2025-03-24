@@ -2,15 +2,15 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const User = require('../models/user.model');
+const SibApiV3Sdk = require("sib-api-v3-sdk");
 
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: process.env.SMTP_PORT,
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS
-  }
-});
+
+let defaultClient = SibApiV3Sdk.ApiClient.instance;
+let apiKey = defaultClient.authentications["api-key"];
+apiKey.apiKey =  process.env.BREVO_API;
+
+let apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
+
 
 const authController = {
   signup: async (req, res) => {
@@ -37,11 +37,18 @@ const authController = {
       // Send verification email
       const verificationUrl = `${req.protocol}://${req.get('host')}/api/auth/verify/${verificationToken}`;
     try{
-      await transporter.sendMail({
-        to: email,
-        subject: 'Please verify your email',
-        html: `Click <a href="${verificationUrl}">here</a> to verify your email.`
-      });
+      let sendSmtpEmail = {
+        to: [{ email: email, name: name }],
+        sender: { email: "kush@solulab.co", name: "epipeinstamart" },
+        subject: "Please verify your email",
+        htmlContent: `<html><body>Click <a href="${verificationUrl}">here</a> to verify your email.</body></html>`,
+    };
+    
+    apiInstance.sendTransacEmail(sendSmtpEmail).then(
+        (data) => console.log("Email sent successfully:", data),
+        (error) => console.error(error)
+    );
+
     }catch(err) { 
       console.log('error', err)
     }
@@ -164,7 +171,7 @@ const authController = {
   
       const { email, password } = req.body;
       const user = await User.findOne({ email });
-
+  
       if (!user || !(await user.comparePassword(password))) {
         return res.status(400).json({ message: 'Invalid credentials' });
       }

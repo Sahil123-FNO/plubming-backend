@@ -2,7 +2,7 @@ const Product = require('../models/product.model');
 
 exports.createProduct = async (req, res) => {
   try {
-    const { name, description, price, categoryName, stock, sizes } = req.body;
+    const { name, description, price, categoryName, stock, sizes, pincodes } = req.body;
     const properpath = req.file ? req.file.path.replace('/uploads', '') : req.file.path
     const product = new Product({
       name,
@@ -10,7 +10,8 @@ exports.createProduct = async (req, res) => {
       price,
       categoryName,
       stock,
-      sizes,
+      sizes: JSON.parse(sizes),
+      pincodes: JSON.parse(pincodes),
       image: properpath
     });
     await product.save();
@@ -87,9 +88,14 @@ exports.getProductById = async (req, res) => {
 
 exports.updateProduct = async (req, res) => {
   try {
-    const updateData = { ...req.body };
+    let updateData = { ...req.body };
     if (req.file) updateData.image = req.file.path;
-    
+    if(updateData.sizes) { 
+      updateData.sizes =  JSON.parse(updateData.sizes);
+    }
+    if(updateData.pincodes) { 
+      updateData.pincodes =  JSON.parse(updateData.pincodes);
+    }
     const product = await Product.findByIdAndUpdate(
       req.params.id,
       { $set: updateData },

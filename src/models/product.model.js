@@ -11,6 +11,7 @@ const productSchema = new mongoose.Schema({
     required: true
   },
   sizes: [String],
+  pincodes: [String],
   categoryName: String,
   stock: {
     type: Number,
