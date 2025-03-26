@@ -15,9 +15,13 @@ const paymentSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
+  razorpayPaymentId: {
+    type: String,
+    
+  },
   stripePaymentId: {
     type: String,
-    required: true
+    
   },
   status: {
     type: String,

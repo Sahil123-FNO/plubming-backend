@@ -2,8 +2,9 @@ const express = require('express');
 const router = express.Router();
 const auth  = require('../middlewares/auth.middleware');
 const { body } = require('express-validator');
-const paymentController = require('../controllers/payment.controller');
+
 const validateRequest = require('../middlewares/validate-request.middleware');
+const { createPayment, verifyPayment, handleWebhook, processPayment, getPaymentHistory, getPaymentDetails,  } = require('../controllers/payment.controller');
 
 // Process Payment Validation
 const processPaymentValidation = [
@@ -32,25 +33,31 @@ router.post(
     auth,
     processPaymentValidation,
     validateRequest,
-    paymentController.processPayment
+    processPayment
 );
 
 router.get(
     '/history',
     auth,
-    paymentController.getPaymentHistory
+    getPaymentHistory
 );
 
 router.get(
     '/:id',
     auth,
-    paymentController.getPaymentDetails
+    getPaymentDetails
 );
 
 router.post(
     '/verify',
     auth,
-    paymentController.verifyPayment
+    verifyPayment
 );
+
+// Create payment route (requires authentication)
+router.post('/create', auth, createPayment);
+
+// Webhook route (no authentication required as it's called by Razorpay)
+router.post('/webhook', handleWebhook);
 
 module.exports = router; 

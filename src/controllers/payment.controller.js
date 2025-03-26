@@ -1,4 +1,3 @@
-
 require('dotenv').config();
 if (!process.env.STRIPE_SECRET_KEY) {
   console.error('STRIPE_SECRET_KEY is not defined in environment variables');
@@ -9,7 +8,14 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const Order = require('../models/order.model');
 const Payment = require('../models/payment.model');
 const Booking = require('../models/booking.model');
+const Razorpay = require('razorpay');
+const crypto = require('crypto');
 
+// Initialize Razorpay
+const razorpay = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_KEY_SECRET,
+});
 
 const paymentController = {
   processPayment: async (req, res) => {
@@ -225,6 +231,165 @@ const paymentController = {
     }
 
     res.json({ received: true });
+  },
+
+  createPayment: async (req, res) => {
+    try {
+      const { orderId } = req.body;
+
+      // Fetch order details from your database
+      const order = await Order.findById(orderId);
+      if (!order) {
+        return res.status(404).json({
+          success: false,
+          message: 'Order not found'
+        });
+      }
+
+      // Create Razorpay order
+      const razorpayOrder = await razorpay.orders.create({
+        amount: Math.round(order.totalAmount * 100), // Convert to smallest currency unit (paise)
+        currency: 'INR',
+        receipt: order.orderNumber,
+        notes: {
+          orderId: order._id.toString(),
+          userId: order.userId.toString()
+        }
+      });
+
+      // Update order with Razorpay order ID
+      order.paymentStatus = 'paid';
+      order.paymentDetails.razorpayOrderId = razorpayOrder.id;
+      await order.save();
+      const payment = await Payment.create({
+        order: order._id,
+        user: req.user._id,
+        amount: order.totalAmount,
+        razorpayPaymentId: razorpayOrder.id,
+        status: razorpayOrder.status,
+        paymentMethod: paymentMethodId
+      });
+
+      
+      res.status(200).json({
+        success: true,
+        data: {
+          orderId: razorpayOrder.id,
+          amount: razorpayOrder.amount,
+          currency: razorpayOrder.currency,
+          key: process.env.RAZORPAY_KEY_ID
+        }
+      });
+
+    } catch (error) {
+      console.error('Payment creation error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error creating payment',
+        error: error.message
+      });
+    }
+  },
+
+  verifyPaymentSignature: async (req, res) => {
+    try {
+      const {
+        razorpay_order_id,
+        razorpay_payment_id,
+        razorpay_signature
+      } = req.body;
+
+      // Verify signature
+      const sign = razorpay_order_id + '|' + razorpay_payment_id;
+      const expectedSign = crypto
+        .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+        .update(sign)
+        .digest('hex');
+
+      if (razorpay_signature !== expectedSign) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid payment signature'
+        });
+      }
+
+      // Find and update order
+      const order = await Order.findOne({
+        'paymentDetails.razorpayOrderId': razorpay_order_id
+      });
+
+      if (!order) {
+        return res.status(404).json({
+          success: false,
+          message: 'Order not found'
+        });
+      }
+
+      // Update order payment details
+      order.paymentDetails.status = 'paid';
+      order.paymentDetails.transactionId = razorpay_payment_id;
+      order.paymentDetails.paidAt = new Date();
+      order.status = 'confirmed';
+      
+      await order.save();
+
+      res.status(200).json({
+        success: true,
+        message: 'Payment verified successfully'
+      });
+
+    } catch (error) {
+      console.error('Payment verification error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error verifying payment',
+        error: error.message
+      });
+    }
+  },
+
+  handleWebhook: async (req, res) => {
+    try {
+      // Verify webhook signature
+      const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
+      const shasum = crypto.createHmac('sha256', webhookSecret);
+      shasum.update(JSON.stringify(req.body));
+      const digest = shasum.digest('hex');
+
+      if (digest !== req.headers['x-razorpay-signature']) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid webhook signature'
+        });
+      }
+
+      const event = req.body;
+
+      // Handle different webhook events
+      switch (event.event) {
+        case 'payment.captured':
+          await handlePaymentCaptured(event.payload.payment.entity);
+          break;
+        
+        case 'payment.failed':
+          await handlePaymentFailed(event.payload.payment.entity);
+          break;
+        
+        case 'refund.processed':
+          await handleRefundProcessed(event.payload.refund.entity);
+          break;
+      }
+
+      res.json({ success: true });
+
+    } catch (error) {
+      console.error('Webhook handling error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error processing webhook',
+        error: error.message
+      });
+    }
   }
 };
 
