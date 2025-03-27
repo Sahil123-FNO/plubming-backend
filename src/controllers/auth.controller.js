@@ -1,9 +1,9 @@
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
-const nodemailer = require('nodemailer');
+
 const User = require('../models/user.model');
 const SibApiV3Sdk = require("sib-api-v3-sdk");
-
+require('dotenv').config();
 
 let defaultClient = SibApiV3Sdk.ApiClient.instance;
 let apiKey = defaultClient.authentications["api-key"];
@@ -36,10 +36,12 @@ const authController = {
 
       // Send verification email
       const verificationUrl = `${req.protocol}://${req.get('host')}/api/auth/verify/${verificationToken}`;
+
+      console.log('verificationUrl', verificationUrl);
     try{
       let sendSmtpEmail = {
         to: [{ email: email, name: name }],
-        sender: { email: "kush@solulab.co", name: "epipeinstamart" },
+        sender: { email: "sahilkoshti4@gmail.com", name: "epipeinstamart" },
         subject: "Please verify your email",
         htmlContent: `<html><body>Click <a href="${verificationUrl}">here</a> to verify your email.</body></html>`,
     };
@@ -180,7 +182,7 @@ const authController = {
         return res.status(400).json({ message: 'Please verify your email first' });
       }
 
-      const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '24h' });
+      const token = jwt.sign({ userId: user._id, role: user.role  }, process.env.JWT_SECRET, { expiresIn: '24h' });
       res.json({ token, user: { id: user._id, email: user.email, name: user.name } });
     } catch (error) {
       res.status(500).json({ message: error.message });

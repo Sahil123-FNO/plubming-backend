@@ -49,7 +49,7 @@ router.get(
 );
 
 router.post(
-    '/verify',
+    '/complete',
     auth,
     verifyPayment
 );

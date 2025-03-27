@@ -9,6 +9,9 @@ exports.getAllOrders = async (req, res) => {
 
     // Build filter object based on query parameters
     const filter = {};
+    if(req.user.role == "user"){ 
+        filter.userId = req.user._id
+    }
     if (req.query.status) filter.status = req.query.status;
     if (req.query.paymentStatus) filter['paymentDetails.status'] = req.query.paymentStatus;
     if (req.query.startDate && req.query.endDate) {
@@ -53,6 +56,7 @@ exports.getAllOrders = async (req, res) => {
       }
     });
   } catch (error) {
+    console.log('error', error)
     res.status(500).json({ message: error.message });
   }
 };

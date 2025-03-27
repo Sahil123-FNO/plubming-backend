@@ -39,6 +39,10 @@ const paymentController = {
         confirmation_method: 'manual',
         confirm: true,
         description: `Payment for ${booking.service.name}`,
+        automatic_payment_methods: {
+          enabled: true,
+          allow_redirects: 'never', // Prevent redirect-based payments
+        },
         metadata: {
           bookingId: booking._id.toString(),
           userId: req.user._id.toString()
@@ -68,11 +72,12 @@ const paymentController = {
         const paymentIntent = await stripe.paymentIntents.create({
           amount: orders.totalAmount * 100, // Stripe expects amount in cents
           currency: 'inr',
-          
-          payment_method: paymentMethodId,
-          confirmation_method: 'manual',
-          confirm: true,
+        
           description: `Payment for ${orders._id.toString()}`,
+          automatic_payment_methods: {
+            enabled: true,
+            allow_redirects: 'never', // Prevent redirect-based payments
+          },
           metadata: {
             bookingId: orders._id.toString(),
             userId: req.user._id.toString()
@@ -93,13 +98,14 @@ const paymentController = {
         orders.paymentStatus = 'paid';
         await orders.save();
   
-      }
       
+      console.log('paymentIntent', paymentIntent);
       res.json({
         success: true,
-        payment,
+        paymentIntent,
         clientSecret: paymentIntent.client_secret
       });
+    }
     } catch (error) {
       console.error('Payment processing error:', error);
       res.status(500).json({
