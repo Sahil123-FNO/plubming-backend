@@ -82,18 +82,21 @@ exports.updateOrderStatus = async (req, res) => {
 
   try {
     const { status, note } = req.body;
-    const validStatuses = ['pending', 'confirmed', 'processing', 'completed', 'cancelled', 'refunded'];
+    const validStatuses = ['pending', 'confirmed', 'processing', 'completed', 'cancelled', 'returned'];
     
     if (!validStatuses.includes(status)) {
       return res.status(400).json({ message: 'Invalid status' });
     }
 
     const order = await Order.findById(req.params.id).session(session);
+  
     if (!order) {
       await session.abortTransaction();
       return res.status(404).json({ message: 'Order not found' });
     }
-
+    if(order.status == 'completed'){
+      return res.status(400).json({ message: 'Order is completed' });
+    }
     // Add status history
     order.statusHistory.push({
       status,

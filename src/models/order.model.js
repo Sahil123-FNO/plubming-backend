@@ -14,7 +14,7 @@ const orderSchema = new mongoose.Schema({
   items: [{
     type: {
       type: String,
-      enum: ['products', 'service'],
+      enum: ['Product', 'service'],
       required: true
     },
     itemId: {
